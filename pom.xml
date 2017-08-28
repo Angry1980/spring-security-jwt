@@ -4,9 +4,49 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.angry1980.security</groupId>
+    <groupId>com.github.angry1980.security</groupId>
     <artifactId>spring-security-jwt</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+
+    <name>${project.artifactId}</name>
+    <description>spring-security_webflux extension which allows JWT authentication</description>
+    <url>https://github.com/Angry1980/spring-security-jwt</url>
+
+    <developers>
+        <developer>
+            <id>dkhomutov</id>
+            <name>Dmitry Khomutov</name>
+            <email>dhomutov@yandex.ru</email>
+            <timezone>+2</timezone>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:git@github.com:angry1980/spring-security-jwt.git</connection>
+        <tag>HEAD</tag>
+        <url>https://github.com/Angry1980/spring-security-jwt.git</url>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <uniqueVersion>false</uniqueVersion>
+            <id>sonatype-releases</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+        <snapshotRepository>
+            <uniqueVersion>false</uniqueVersion>
+            <id>sonatype-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
