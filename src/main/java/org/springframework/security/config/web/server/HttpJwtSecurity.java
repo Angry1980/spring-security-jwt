@@ -111,6 +111,10 @@ public class HttpJwtSecurity {
                 .flatMap( r -> Optional.of(new SecurityContextRepositoryWebFilter(r)));
     }
 
+    public static HttpJwtSecurity jwt() {
+        return new HttpJwtSecurity();
+    }
+
     private HttpJwtSecurity() {}
 
 

@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+org.angry1980.security.jwt.JwtSecurityAutoConfiguration
