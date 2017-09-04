@@ -44,13 +44,13 @@ class ApplicationTest {
         this.client = WebTestClient.bindToServer()
                 .baseUrl("http://localhost:$port/$PATH_PREFIX")
                 .filter { clientRequest, next ->
-                    LOG.debug("Request is ready to sent {}", requestInfo(clientRequest))
-                    print(clientRequest.headers(), true)
+                    LOG.debug("Request is ready to sent {}", clientRequest.requestInfo())
+                    clientRequest.headers().print()
                     next.exchange(clientRequest)
-                            .doOnError { ex -> LOG.error("Error when sending request {}", requestInfo(clientRequest), ex) }
+                            .doOnError { ex -> LOG.error("Error when sending request {}", clientRequest.requestInfo(), ex) }
                             .doOnSuccess { result ->
-                                LOG.debug("Response for {} was recieved with status {}", requestInfo(clientRequest), result.statusCode())
-                                print(result.headers().asHttpHeaders(), false)
+                                LOG.debug("Response for {} was recieved with status {}", clientRequest.requestInfo(), result.statusCode())
+                                result.headers().asHttpHeaders().print(false)
                             }
                 }.build()
     }
@@ -123,14 +123,6 @@ class ApplicationTest {
                 .signWith(SignatureAlgorithm.HS512, signingKey)
                 .compact()
         return "Bearer " + token
-    }
-
-    private fun requestInfo(request: ClientRequest): String {
-        return request.method().toString() + " " + request.url()
-    }
-
-    private fun print(headers: HttpHeaders, request: Boolean) {
-        headers.forEach { name, values -> values.forEach { value -> LOG.debug(if (request) "Request header {}: {}" else "Response header {}: {}", name, value) } }
     }
 
     internal inner class RequestInfo(var path: String, var role: String?)

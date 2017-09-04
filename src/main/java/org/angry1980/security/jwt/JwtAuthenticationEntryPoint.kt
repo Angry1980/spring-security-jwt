@@ -15,7 +15,7 @@ class JwtAuthenticationEntryPoint : AuthenticationEntryPoint {
     val LOG = LoggerFactory.getLogger(JwtAuthenticationEntryPoint::class.java)
 
     override fun <T> commence(exchange: ServerWebExchange, e: AuthenticationException) = Mono.empty<T>().apply {
-        LOG.info("Error while handling {}: {}", JwtUtils.getRequestInfo(exchange), e.message)
+        LOG.info("Error while handling {}: {}", exchange.requestInfo(), e.message)
         exchange.response.statusCode = HttpStatus.UNAUTHORIZED
     }
 

@@ -32,7 +32,7 @@ class JwtExceptionTranslationWebFilter(
                             )
                             // user is authenticated but does not have enough rights to get access to resource
                             .flatMap { principal ->
-                                LOG.info("Access for {} to {} is denied", principal.getName(), JwtUtils.getRequestInfo(exchange))
+                                LOG.info("Access for {} to {} is denied", principal.getName(), exchange.requestInfo())
                                 accessDeniedHandler.handle<Void>(exchange, e)
                             }
                 }
