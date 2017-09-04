@@ -45,7 +45,6 @@ public class Application {
         return prototype
                 .securityMatcher(ServerWebExchangeMatchers.pathMatchers("/" + PATH_PREFIX + "/**"))
                 .authorizeExchange()
-                    //todo: has Role
                     .pathMatchers("/*/test1").hasRole("TEST1")
                     .pathMatchers("/*/test2").hasRole("TEST2")
                     .anyExchange().authenticated()

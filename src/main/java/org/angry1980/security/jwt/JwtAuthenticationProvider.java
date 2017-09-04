@@ -12,7 +12,11 @@ import org.springframework.security.core.userdetails.User;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Create list of roles based on info contained in json web token
+ */
 public class JwtAuthenticationProvider implements AuthenticationProvider {
+
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         Jws<Claims> token = (Jws<Claims>) authentication.getCredentials();

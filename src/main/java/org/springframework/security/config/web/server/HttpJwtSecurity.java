@@ -33,6 +33,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Builder which is used by defining permissions for different resources.
+ *
+ * Spring {@link org.springframework.security.config.web.server.HttpSecurity } was used as prototype.
+ */
 public class HttpJwtSecurity {
 
     private String signingKey;
@@ -77,6 +82,10 @@ public class HttpJwtSecurity {
         return authorizeExchangeBuilder;
     }
 
+    /**
+     *
+     * @return instance of {@link SecurityWebFilterChain }
+     */
     public SecurityWebFilterChain build() {
         AuthenticationEntryPoint entryPoint = new JwtAuthenticationEntryPoint();
         List<WebFilter> filters = new ArrayList<>();

@@ -12,6 +12,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
+/**
+ *  Function which is used to get info for authentication from http request
+ */
 public class JwtAuthenticationConverter implements Function<ServerWebExchange, Mono<Authentication>> {
 
     private static Logger LOG = LoggerFactory.getLogger(JwtAuthenticationConverter.class);
@@ -25,19 +28,26 @@ public class JwtAuthenticationConverter implements Function<ServerWebExchange, M
     @Override
     public Mono<Authentication> apply(ServerWebExchange exchange) {
         return Mono.defer(() -> Optional.ofNullable(
+                // get values of Authorization header
                 exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION)
-            ).flatMap(list -> list.stream()
-                .filter(it -> it.startsWith("Bearer "))
-                .map(it -> it.substring(7))
-                .findFirst()
+            ).flatMap(list ->
+                list.stream()
+                    // choose the first one which starts with token type prefix
+                    .filter(value -> value.startsWith("Bearer "))
+                    // get value of token
+                    .map(value -> value.substring(7))
+                    .findFirst()
             ).map(value -> {
                 try {
+                    // parse string value to signed json web token
                     return Jwts.parser().setSigningKey(signingKey).parseClaimsJws(value);
                 } catch(Exception e) {
                     LOG.error("Error while parsing jwt token for {}", JwtUtils.getRequestInfo(exchange), e);
                 }
                 return null;
-            }).map(JwtAuthenticationToken::new)
+            })
+            // wrap parsed jwt by object which implements spring Authentication interface
+            .map(JwtAuthenticationToken::new)
             .map(token -> Mono.just(token))
             .orElseGet(() -> Mono.empty())
         );

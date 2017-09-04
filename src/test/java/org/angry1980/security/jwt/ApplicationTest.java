@@ -72,7 +72,7 @@ public class ApplicationTest {
     @Test
     public void requestsByUserWithoutRoles(){
         requests.forEach(request ->
-                jwtAuthClient(client).get()
+                jwtAuthClient(client, signingKey).get()
                         .uri("/" + request.path)
                         .exchange()
                         .expectStatus()
@@ -85,7 +85,7 @@ public class ApplicationTest {
         requests.stream()
                 .filter(request -> request.role != null)
                 .forEach(request ->
-                    jwtAuthClient(client, request.role).get()
+                    jwtAuthClient(client, signingKey, request.role).get()
                         .uri("/" + request.path)
                         .exchange()
                         .expectStatus()
@@ -93,10 +93,22 @@ public class ApplicationTest {
                 );
     }
 
-    private WebTestClient jwtAuthClient(WebTestClient client, String ... roles){
+    @Test
+    public void requestsWithWrongSignigKey(){
+        requests.stream()
+                .forEach(request ->
+                        jwtAuthClient(client, "WrongKey", request.role).get()
+                                .uri("/" + request.path)
+                                .exchange()
+                                .expectStatus()
+                                .isUnauthorized()
+                );
+    }
+
+    private WebTestClient jwtAuthClient(WebTestClient client, String signingKey, String ... roles){
         return client.mutate().filter(
                 ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
-                    String authorization = authorization(client, roles);
+                    String authorization = authorization(signingKey, roles);
                     LOG.debug("Generated jwt authorization header  {}", authorization);
                     ClientRequest authorizedRequest = ClientRequest.from(clientRequest)
                         .headers(headers -> headers.set(HttpHeaders.AUTHORIZATION, authorization) )
@@ -106,7 +118,7 @@ public class ApplicationTest {
         ).build();
     }
 
-    private String authorization(WebTestClient client, String ... roles) {
+    private String authorization(String signingKey, String ... roles) {
         Claims claims = Jwts.claims().setSubject("test");
         claims.put("scopes", roles);
         String token = Jwts.builder()

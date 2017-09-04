@@ -9,6 +9,9 @@ import org.springframework.security.core.userdetails.User;
 import java.util.Collection;
 import java.util.Objects;
 
+/**
+ *  Wrapper for signed json web token compatible with spring security solution
+ */
 public class JwtAuthenticationToken extends AbstractAuthenticationToken {
 
     private final Jws<Claims> token;

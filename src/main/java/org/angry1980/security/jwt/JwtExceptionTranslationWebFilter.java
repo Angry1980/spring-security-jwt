@@ -15,6 +15,9 @@ import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 
+/**
+ * Handler of authorization errors
+ */
 public class JwtExceptionTranslationWebFilter implements WebFilter {
 
     private static Logger LOG = LoggerFactory.getLogger(JwtExceptionTranslationWebFilter.class);
@@ -36,12 +39,15 @@ public class JwtExceptionTranslationWebFilter implements WebFilter {
         return chain.filter(exchange)
                 .onErrorResume(AccessDeniedException.class, e ->
                     exchange.getPrincipal()
+                            // user was not authenticated
                             .switchIfEmpty(
                                     Mono.defer(
                                             () -> entryPoint.commence(exchange, new AuthenticationCredentialsNotFoundException("Not Authenticated", e))
                                     )
-                            ).flatMap(it -> {
-                                LOG.info("Access for {} to {} is denied", it.getName(), JwtUtils.getRequestInfo(exchange));
+                            )
+                            // user is authenticated but does not have enough rights to get access to resource
+                            .flatMap( principal -> {
+                                LOG.info("Access for {} to {} is denied", principal.getName(), JwtUtils.getRequestInfo(exchange));
                                 return accessDeniedHandler.<Void>handle(exchange, e);
                             })
                 );

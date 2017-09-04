@@ -8,6 +8,9 @@ import org.springframework.security.web.server.AuthenticationEntryPoint;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+/**
+ * Handler which is used when it's not possible to get any info about user
+ */
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private static Logger LOG = LoggerFactory.getLogger(JwtAuthenticationEntryPoint.class);
