@@ -10,6 +10,9 @@ import org.springframework.security.web.server.context.ServerWebExchangeAttribut
 
 import static org.springframework.security.config.web.server.HttpJwtSecurity.jwt;
 
+/**
+ * Auto-configuration for JSON Web Token authentication method.
+ */
 @Configuration
 @ConditionalOnProperty(name = "security.jwt.signingKey", matchIfMissing = false)
 public class JwtSecurityAutoConfiguration {
@@ -17,6 +20,9 @@ public class JwtSecurityAutoConfiguration {
     @Value("security.jwt.signingKey")
     private String signingKey;
 
+    /**
+     * Prototype bean of Jwt Security builder which later can be used to create web filter chains.
+     */
     @Bean
     @Scope("prototype")
     public HttpJwtSecurity jwtSecurity() {

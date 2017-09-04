@@ -16,6 +16,12 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.n
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 import static org.springframework.web.reactive.function.server.ServerResponse.ok;
 
+/**
+ *  Application which is created for test purpose.
+ *  It has handlers for three different request paths.
+ *  Two of them require special permission.
+ *  Last one should be acceptable for all authenticated users.
+ */
 @SpringBootApplication
 @EnableWebFluxSecurity
 public class Application {

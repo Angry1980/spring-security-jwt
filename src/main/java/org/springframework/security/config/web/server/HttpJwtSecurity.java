@@ -14,6 +14,7 @@ import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.web.server.AuthenticationEntryPoint;
 import org.springframework.security.web.server.MatcherSecurityWebFilterChain;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.authentication.DefaultAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -34,7 +35,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Builder which is used by defining permissions for different resources.
+ * Builder which is used to define permissions for different resources.
  *
  * Spring {@link org.springframework.security.config.web.server.HttpSecurity } was used as prototype.
  */
@@ -88,12 +89,14 @@ public class HttpJwtSecurity {
      */
     public SecurityWebFilterChain build() {
         AuthenticationEntryPoint entryPoint = new JwtAuthenticationEntryPoint();
+        DefaultAuthenticationSuccessHandler successHandler = new DefaultAuthenticationSuccessHandler();
+        securityContextRepository.ifPresent(repository -> successHandler.setSecurityContextRepository(repository));
         List<WebFilter> filters = new ArrayList<>();
         if(headers != null) {
             filters.add(headers.build());
         }
-        securityContextRepositoryWebFilter().ifPresent( f-> filters.add(f));
-        filters.add(authenticationFilter(entryPoint));
+        securityContextRepository.map( r -> new SecurityContextRepositoryWebFilter(r)).ifPresent( f-> filters.add(f));
+        filters.add(authenticationFilter(entryPoint, successHandler));
         if(authorizeExchangeBuilder != null) {
             filters.add(new JwtExceptionTranslationWebFilter(entryPoint));
             filters.add(authorizeExchangeBuilder.build());
@@ -101,7 +104,8 @@ public class HttpJwtSecurity {
         return new MatcherSecurityWebFilterChain(getSecurityMatcher(), filters);
     }
 
-    private AuthenticationWebFilter authenticationFilter(AuthenticationEntryPoint entryPoint){
+    private AuthenticationWebFilter authenticationFilter(AuthenticationEntryPoint entryPoint,
+                                                         AuthenticationSuccessHandler successHandler){
         AuthenticationWebFilter authenticationFilter = new AuthenticationWebFilter(new ReactiveAuthenticationManagerAdapter(
                 new ProviderManager(authenticationProviders)
         ));
@@ -109,15 +113,8 @@ public class HttpJwtSecurity {
         if(signingKey != null){
             authenticationFilter.setAuthenticationConverter(new JwtAuthenticationConverter(signingKey));
         }
-        DefaultAuthenticationSuccessHandler successHandler = new DefaultAuthenticationSuccessHandler();
-        securityContextRepository.ifPresent(repository -> successHandler.setSecurityContextRepository(repository));
         authenticationFilter.setAuthenticationSuccessHandler(successHandler);
         return authenticationFilter;
-    }
-
-    private Optional<SecurityContextRepositoryWebFilter> securityContextRepositoryWebFilter() {
-        return securityContextRepository
-                .flatMap( r -> Optional.of(new SecurityContextRepositoryWebFilter(r)));
     }
 
     public static HttpJwtSecurity jwt() {
