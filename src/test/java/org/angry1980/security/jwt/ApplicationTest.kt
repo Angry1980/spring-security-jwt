@@ -42,7 +42,7 @@ class ApplicationTest {
     @Before
     fun setup() {
         this.client = WebTestClient.bindToServer()
-                .baseUrl("http://localhost:" + port + "/" + Application.PATH_PREFIX)
+                .baseUrl("http://localhost:$port/$PATH_PREFIX")
                 .filter { clientRequest, next ->
                     LOG.debug("Request is ready to sent {}", requestInfo(clientRequest))
                     print(clientRequest.headers(), true)
