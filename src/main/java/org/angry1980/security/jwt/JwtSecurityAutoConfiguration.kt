@@ -8,8 +8,6 @@ import org.springframework.context.annotation.Scope
 import org.springframework.security.config.web.server.HttpJwtSecurity
 import org.springframework.security.web.server.context.ServerWebExchangeAttributeSecurityContextRepositoryFix
 
-import org.springframework.security.config.web.server.HttpJwtSecurity.jwt
-
 /**
  * Auto-configuration for JSON Web Token authentication method.
  */
@@ -22,8 +20,7 @@ class JwtSecurityAutoConfiguration {
      */
     @Bean
     @Scope("prototype")
-    fun jwtSecurity(@Value("security.jwt.signingKey") signingKey: String) = jwt().apply {
-        signingKey(signingKey)
+    fun jwtSecurity(@Value("security.jwt.signingKey") signingKey: String) = HttpJwtSecurity(signingKey).apply {
         //todo: delete after spring fix
         securityContextRepository(ServerWebExchangeAttributeSecurityContextRepositoryFix())
         //security.securityContextRepository(new ServerWebExchangeAttributeSecurityContextRepository());
