@@ -32,7 +32,7 @@ class ApplicationTest {
 
     private lateinit var client: WebTestClient
 
-    private val requests = Arrays.asList(
+    private val requests = listOf(
             RequestInfo("test1", "TEST1"),
             RequestInfo("test2", "TEST2"),
             RequestInfo("test3", null)
@@ -56,7 +56,7 @@ class ApplicationTest {
     }
 
     @Test
-    fun requestsByUnauthorizedUser() {
+    fun `requests by unauthorized user should be rejected`() {
         requests.forEach { request ->
             client.get()
                     .uri("/" + request.path)

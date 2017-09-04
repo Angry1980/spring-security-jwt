@@ -58,7 +58,6 @@ class HttpJwtSecurity(val signingKey: String) {
     }
 
     /**
-
      * @return instance of [SecurityWebFilterChain]
      */
     fun build(): SecurityWebFilterChain {

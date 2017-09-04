@@ -7,14 +7,9 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.HttpJwtSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers
-import org.springframework.web.reactive.function.server.RouterFunction
-import org.springframework.web.reactive.function.server.ServerResponse
 
 import org.springframework.web.reactive.function.BodyInserters.fromObject
-import org.springframework.web.reactive.function.server.HandlerFunction
-import org.springframework.web.reactive.function.server.RequestPredicates.path
-import org.springframework.web.reactive.function.server.RouterFunctions.nest
-import org.springframework.web.reactive.function.server.RouterFunctions.route
+import org.springframework.web.reactive.function.server.*
 import org.springframework.web.reactive.function.server.ServerResponse.ok
 
 val PATH_PREFIX = "api"
@@ -33,18 +28,14 @@ fun main(args: Array<String>) {
 @EnableWebFluxSecurity
 class Application {
 
+
     @Bean
-    fun router(): RouterFunction<ServerResponse> {
-        return nest(
-                path("/$PATH_PREFIX"),
-                route<ServerResponse>(
-                        path("/test1"), HandlerFunction { ok().body(fromObject("test1")) }
-                ).andRoute(
-                        path("/test2"), HandlerFunction { ok().body(fromObject("test2")) }
-                ).andRoute(
-                        path("/test3"), HandlerFunction { ok().body(fromObject("test3")) }
-                )
-        )
+    fun applicationRouter() = router {
+        path("/$PATH_PREFIX").nest {
+            GET("/test1") { ok().body(fromObject("test1")) }
+            GET("/test2") { ok().body(fromObject("test2")) }
+            GET("/test3") { ok().body(fromObject("test3")) }
+        }
     }
 
     @Bean
