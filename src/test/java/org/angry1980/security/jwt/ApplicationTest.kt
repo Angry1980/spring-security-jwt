@@ -125,6 +125,6 @@ class ApplicationTest {
         return "Bearer " + token
     }
 
-    internal inner class RequestInfo(var path: String, var role: String?)
+    data class RequestInfo(val path: String, val role: String?)
 
 }
