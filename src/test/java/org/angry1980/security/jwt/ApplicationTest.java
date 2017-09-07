@@ -20,7 +20,6 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
-import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -34,13 +33,6 @@ public class ApplicationTest {
     private String signingKey;
 
     private WebTestClient client;
-
-    private List<RequestInfo> requests = Arrays.asList(
-            new RequestInfo("test1", "TEST1"),
-            new RequestInfo("test2", "TEST2"),
-            new RequestInfo("test3", null)
-    );
-
 
     @Before
     public void setup(){
@@ -59,50 +51,37 @@ public class ApplicationTest {
     }
 
     @Test
-    public void requestsByUnauthorizedUser(){
-        requests.forEach(request ->
-                client.get()
-                        .uri("/" + request.path)
-                        .exchange()
-                        .expectStatus()
-                        .isUnauthorized()
-        );
+    public void testRequestsPermissions(){
+        Arrays.asList(
+                //test1 requests
+                new RequestInfo("test1", new User("TEST1"), HttpStatus.OK),
+                new RequestInfo("test1", new User("TEST2"), HttpStatus.FORBIDDEN),
+                new RequestInfo("test1", new User(null),    HttpStatus.FORBIDDEN),
+                new RequestInfo("test1", null,              HttpStatus.UNAUTHORIZED),
+                // test3 requests
+                new RequestInfo("test3", new User("TEST1"), HttpStatus.OK),
+                new RequestInfo("test3", new User(null),    HttpStatus.OK),
+                new RequestInfo("test3", null,              HttpStatus.UNAUTHORIZED)
+
+        ).forEach(request -> {
+            LOG.info("Checking request {}", request);
+            WebTestClient client = request.user == null ? this.client
+                    : jwtAuthClient(this.client, signingKey, request.user.role);
+            client.get()
+                    .uri("/" + request.path)
+                    .exchange()
+                    .expectStatus()
+                    .isEqualTo(request.status);
+        });
     }
 
     @Test
-    public void requestsByUserWithoutRoles(){
-        requests.forEach(request ->
-                jwtAuthClient(client, signingKey).get()
-                        .uri("/" + request.path)
-                        .exchange()
-                        .expectStatus()
-                        .isEqualTo(request.role != null ? HttpStatus.FORBIDDEN : HttpStatus.OK)
-        );
-    }
-
-    @Test
-    public void requestsByUserWithRoles(){
-        requests.stream()
-                .filter(request -> request.role != null)
-                .forEach(request ->
-                    jwtAuthClient(client, signingKey, request.role).get()
-                        .uri("/" + request.path)
-                        .exchange()
-                        .expectStatus()
-                        .isEqualTo(HttpStatus.OK)
-                );
-    }
-
-    @Test
-    public void requestsWithWrongSignigKey(){
-        requests.stream()
-                .forEach(request ->
-                        jwtAuthClient(client, "WrongKey", request.role).get()
-                                .uri("/" + request.path)
-                                .exchange()
-                                .expectStatus()
-                                .isUnauthorized()
-                );
+    public void testWrongSignigKey(){
+        jwtAuthClient(client, "WrongKey", "TEST1").get()
+                .uri("/test1")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized();
     }
 
     private WebTestClient jwtAuthClient(WebTestClient client, String signingKey, String ... roles){
@@ -138,14 +117,40 @@ public class ApplicationTest {
         );
     }
 
+    class User {
+        String role;
+
+        public User(String role) {
+            this.role = role;
+        }
+
+        @Override
+        public String toString() {
+            return "User{" +
+                    "role='" + role + '\'' +
+                    '}';
+        }
+    }
+
     class RequestInfo{
 
         String path;
-        String role;
+        User user;
+        HttpStatus status;
 
-        public RequestInfo(String path, String role) {
+        public RequestInfo(String path, User user, HttpStatus status) {
             this.path = path;
-            this.role = role;
+            this.user = user;
+            this.status = status;
+        }
+
+        @Override
+        public String toString() {
+            return "RequestInfo{" +
+                    "path='" + path + '\'' +
+                    ", user=" + user +
+                    ", status=" + status +
+                    '}';
         }
     }
 }
