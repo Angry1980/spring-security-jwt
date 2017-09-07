@@ -20,6 +20,7 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
+import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -51,22 +52,25 @@ public class ApplicationTest {
     }
 
     @Test
-    public void testRequestsPermissions(){
-        Arrays.asList(
+    public void test(){
+        List<RequestInfo> requests = Arrays.asList(
                 //test1 requests
-                new RequestInfo("test1", new User("TEST1"), HttpStatus.OK),
-                new RequestInfo("test1", new User("TEST2"), HttpStatus.FORBIDDEN),
-                new RequestInfo("test1", new User(null),    HttpStatus.FORBIDDEN),
-                new RequestInfo("test1", null,              HttpStatus.UNAUTHORIZED),
+                new RequestInfo("test1", new User("TEST1"), signingKey, HttpStatus.OK),
+                new RequestInfo("test1", new User("TEST2"), signingKey, HttpStatus.FORBIDDEN),
+                new RequestInfo("test1", new User(null),    signingKey, HttpStatus.FORBIDDEN),
+                new RequestInfo("test1", null,              signingKey, HttpStatus.UNAUTHORIZED),
+                new RequestInfo("test1", new User("TEST1"), "wrongKey", HttpStatus.UNAUTHORIZED),
                 // test3 requests
-                new RequestInfo("test3", new User("TEST1"), HttpStatus.OK),
-                new RequestInfo("test3", new User(null),    HttpStatus.OK),
-                new RequestInfo("test3", null,              HttpStatus.UNAUTHORIZED)
+                new RequestInfo("test3", new User("TEST1"), signingKey, HttpStatus.OK),
+                new RequestInfo("test3", new User(null),    signingKey, HttpStatus.OK),
+                new RequestInfo("test3", null,              signingKey, HttpStatus.UNAUTHORIZED),
+                new RequestInfo("test3", new User(null),    "wrongKey", HttpStatus.UNAUTHORIZED)
 
-        ).forEach(request -> {
+        );
+        requests.forEach(request -> {
             LOG.info("Checking request {}", request);
             WebTestClient client = request.user == null ? this.client
-                    : jwtAuthClient(this.client, signingKey, request.user.role);
+                    : jwtAuthClient(this.client, request.signingKey, request.user.role);
             client.get()
                     .uri("/" + request.path)
                     .exchange()
@@ -75,14 +79,6 @@ public class ApplicationTest {
         });
     }
 
-    @Test
-    public void testWrongSignigKey(){
-        jwtAuthClient(client, "WrongKey", "TEST1").get()
-                .uri("/test1")
-                .exchange()
-                .expectStatus()
-                .isUnauthorized();
-    }
 
     private WebTestClient jwtAuthClient(WebTestClient client, String signingKey, String ... roles){
         return client.mutate().filter(
@@ -137,11 +133,13 @@ public class ApplicationTest {
         String path;
         User user;
         HttpStatus status;
+        String signingKey;
 
-        public RequestInfo(String path, User user, HttpStatus status) {
+        public RequestInfo(String path, User user, String signingKey, HttpStatus status) {
             this.path = path;
             this.user = user;
             this.status = status;
+            this.signingKey = signingKey;
         }
 
         @Override
@@ -150,6 +148,7 @@ public class ApplicationTest {
                     "path='" + path + '\'' +
                     ", user=" + user +
                     ", status=" + status +
+                    ", signingKey=" + signingKey +
                     '}';
         }
     }
