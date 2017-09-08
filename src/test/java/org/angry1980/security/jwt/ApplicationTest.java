@@ -20,7 +20,8 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
-import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -28,118 +29,46 @@ public class ApplicationTest {
 
     private static Logger LOG = LoggerFactory.getLogger(ApplicationTest.class);
 
-    @LocalServerPort
-    private int port;
-    @Value("security.jwt.signingKey")
-    private String signingKey;
+    /**
+     *  Helper class which allows to describe user who makes request
+     */
+    static class User {
+        final String name;
+        final String role;
 
-    private WebTestClient client;
+        User(String role){
+            this("test", role);
+        }
 
-    @Before
-    public void setup(){
-        this.client = WebTestClient.bindToServer()
-                        .baseUrl("http://localhost:" + port + "/" + Application.PATH_PREFIX)
-                        .filter((clientRequest, next) -> {
-                            LOG.debug("Request is ready to sent {}", requestInfo(clientRequest));
-                            print(clientRequest.headers(), true);
-                            return next.exchange(clientRequest)
-                                    .doOnError(ex -> LOG.error("Error when sending request {}", requestInfo(clientRequest), ex))
-                                    .doOnSuccess(result -> {
-                                        LOG.debug("Response for {} was recieved with status {}", requestInfo(clientRequest), result.statusCode());
-                                        print(result.headers().asHttpHeaders(), false);
-                                    });
-                        }).build();
-    }
-
-    @Test
-    public void test(){
-        List<RequestInfo> requests = Arrays.asList(
-                //test1 requests
-                new RequestInfo("test1", new User("TEST1"), signingKey, HttpStatus.OK),
-                new RequestInfo("test1", new User("TEST2"), signingKey, HttpStatus.FORBIDDEN),
-                new RequestInfo("test1", new User(null),    signingKey, HttpStatus.FORBIDDEN),
-                new RequestInfo("test1", null,              signingKey, HttpStatus.UNAUTHORIZED),
-                new RequestInfo("test1", new User("TEST1"), "wrongKey", HttpStatus.UNAUTHORIZED),
-                // test3 requests
-                new RequestInfo("test3", new User("TEST1"), signingKey, HttpStatus.OK),
-                new RequestInfo("test3", new User(null),    signingKey, HttpStatus.OK),
-                new RequestInfo("test3", null,              signingKey, HttpStatus.UNAUTHORIZED),
-                new RequestInfo("test3", new User(null),    "wrongKey", HttpStatus.UNAUTHORIZED)
-
-        );
-        requests.forEach(request -> {
-            LOG.info("Checking request {}", request);
-            WebTestClient client = request.user == null ? this.client
-                    : jwtAuthClient(this.client, request.signingKey, request.user.role);
-            client.get()
-                    .uri("/" + request.path)
-                    .exchange()
-                    .expectStatus()
-                    .isEqualTo(request.status);
-        });
-    }
-
-
-    private WebTestClient jwtAuthClient(WebTestClient client, String signingKey, String ... roles){
-        return client.mutate().filter(
-                ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
-                    String authorization = authorization(signingKey, roles);
-                    LOG.debug("Generated jwt authorization header  {}", authorization);
-                    ClientRequest authorizedRequest = ClientRequest.from(clientRequest)
-                        .headers(headers -> headers.set(HttpHeaders.AUTHORIZATION, authorization) )
-                        .build();
-                    return Mono.just(authorizedRequest);
-                })
-        ).build();
-    }
-
-    private String authorization(String signingKey, String ... roles) {
-        Claims claims = Jwts.claims().setSubject("test");
-        claims.put("scopes", roles);
-        String token = Jwts.builder()
-                .setClaims(claims)
-                .signWith(SignatureAlgorithm.HS512, signingKey)
-                .compact();
-        return "Bearer " + token;
-    }
-
-    private String requestInfo(ClientRequest request){
-        return request.method() + " " + request.url();
-    }
-
-    private void print(HttpHeaders headers, boolean request){
-        headers.forEach( (name, values) ->
-            values.forEach(value -> LOG.debug(request ? "Request header {}: {}" : "Response header {}: {}", name, value))
-        );
-    }
-
-    class User {
-        String role;
-
-        public User(String role) {
+        User(String name, String role) {
+            this.name = requireNonNull(name);
             this.role = role;
         }
 
         @Override
         public String toString() {
             return "User{" +
+                    "name='" + name + '\'' +
                     "role='" + role + '\'' +
                     '}';
         }
     }
 
-    class RequestInfo{
+    /**
+     * Helper class which allows to describe request and expected result
+     */
+    static class RequestInfo{
 
-        String path;
-        User user;
-        HttpStatus status;
-        String signingKey;
+        final String path;
+        final User user;
+        final HttpStatus status;
+        final String signingKey;
 
-        public RequestInfo(String path, User user, String signingKey, HttpStatus status) {
-            this.path = path;
+        RequestInfo(String path, User user, String signingKey, HttpStatus status) {
+            this.path = requireNonNull(path);
             this.user = user;
-            this.status = status;
-            this.signingKey = signingKey;
+            this.status = requireNonNull(status);
+            this.signingKey = requireNonNull(signingKey);
         }
 
         @Override
@@ -152,4 +81,119 @@ public class ApplicationTest {
                     '}';
         }
     }
+
+    @LocalServerPort
+    private int port;
+    @Value("security.jwt.signingKey")
+    private String signingKey;
+
+    /**
+     * Spring reactive web client
+     */
+    private WebTestClient client;
+
+    @Before
+    public void setup(){
+        this.client = WebTestClient.bindToServer()
+                        .baseUrl("http://localhost:" + port + "/" + Application.PATH_PREFIX)
+                        .build();
+    }
+
+    @Test
+    public void requestProtectedResourceWithRestrictedAccessByUserWhichHasNecessaryPermissions(){
+        testTemplate(new RequestInfo("test1", new User("TEST1"), signingKey, HttpStatus.OK));
+    }
+
+    @Test
+    public void requestProtectedResourceWithRestrictedAccessByUserWhichHasNotNecessaryPermissions(){
+        testTemplate(new RequestInfo("test1", new User("TEST2"), signingKey, HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    public void requestProtectedResourceWithRestrictedAccessByUserWithoutPermissions(){
+        testTemplate(new RequestInfo("test1", new User(null), signingKey, HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    public void requestProtectedResourceWithRestrictedAccessByUnauthorizedUser(){
+        testTemplate(new RequestInfo("test1", null, signingKey, HttpStatus.UNAUTHORIZED));
+    }
+
+    @Test
+    public void requestProtectedResourceWithFullAccessByUserWithoutPermissions(){
+        testTemplate(new RequestInfo("test3", new User(null), signingKey, HttpStatus.OK));
+    }
+
+    @Test
+    public void requestProtectedResourceWithFullAccessByUnauthorizedUser(){
+        testTemplate(new RequestInfo("test3", null, signingKey, HttpStatus.UNAUTHORIZED));
+    }
+
+    @Test
+    public void requestProtectedResourceWhenSigningKeyIsWrong(){
+        testTemplate(new RequestInfo("test1", new User("TEST1"), "wrongKey", HttpStatus.UNAUTHORIZED));
+    }
+
+    /**
+     * Test template contains main steps which we should do while checking some case.
+     * It sends http request with parameters defined in input parameter and check the result.
+     * @param request - description of request and expected result
+     */
+    private void testTemplate(RequestInfo request){
+        LOG.info("Checking request: {}", request);
+        // get instance of web client
+        jwtAuthClient(this.client, request.signingKey, request.user)
+                .get()
+                // set resource url
+                .uri("/" + request.path)
+                // send request
+                .exchange()
+                //check status
+                .expectStatus()
+                .isEqualTo(request.status);
+    }
+
+    /**
+     * In case when we need to make request from authorized user ( user is not null)
+     * this method adds to existed filter chain new filter which creates authorization header and set to request header.
+     * @param client - existed web client
+     * @param signingKey - secret key to sign authorization token
+     * @param user - data about user
+     * @return client which should be used to make request
+     */
+    private WebTestClient jwtAuthClient(WebTestClient client, String signingKey, User user){
+        if(user == null){
+            return client;
+        }
+        return client.mutate().filter(
+                ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
+                    String authorization = authorizationHeader(signingKey, user);
+                    LOG.debug("Generated jwt authorization header  {}", authorization);
+                    return Mono.just(
+                            ClientRequest.from(clientRequest)
+                                .headers(headers -> headers.set(HttpHeaders.AUTHORIZATION, authorization) )
+                                .build()
+                    );
+                })
+        ).build();
+    }
+
+    /**
+     * This method creates the value of authorization header.
+     * Firstly it encrypts name of user and the list of his roles and signed result by secret key
+     * @param signingKey - secret key to sign authorization token
+     * @param user - data about user
+     * @return - value of authorization header
+     */
+    private String authorizationHeader(String signingKey, User user) {
+        Claims claims = Jwts.claims().setSubject(user.name);
+        claims.put("scopes", Arrays.asList(user.role));
+        String token = Jwts.builder()
+                .setClaims(claims)
+                .signWith(SignatureAlgorithm.HS512, signingKey)
+                .compact();
+        return "Bearer " + token;
+    }
+
 }
+
