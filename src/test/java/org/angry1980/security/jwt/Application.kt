@@ -51,16 +51,16 @@ class Application {
      */
     @Bean
     fun security(prototype: HttpJwtSecurity) = prototype
-            // rules are actual only for requests with our prefix in path
-            .securityMatcher(ServerWebExchangeMatchers.pathMatchers("/$PATH_PREFIX/**"))
-            .authorizeExchange()
-                // test1 is acceptable for users with role TEST1 only
-                .pathMatchers("/*/test1").hasRole("TEST1")
-                // test2 is acceptable for users with role TEST2 only
-                .pathMatchers("/*/test2").hasRole("TEST2")
-                // test3 is acceptable for any authenticated user
-                .anyExchange().authenticated()
-            .and()
-            .build()
+            .apply {
+                // rules are actual only for requests with our prefix in path
+                securityMatcher = ServerWebExchangeMatchers.pathMatchers("/$PATH_PREFIX/**")
+                authorizeExchangeBuilder
+                        // test1 is acceptable for users with role TEST1 only
+                        .pathMatchers("/*/test1").hasRole("TEST1")
+                        // test2 is acceptable for users with role TEST2 only
+                        .pathMatchers("/*/test2").hasRole("TEST2")
+                        // test3 is acceptable for any authenticated user
+                        .anyExchange().authenticated()
+            }.build()
 
 }
