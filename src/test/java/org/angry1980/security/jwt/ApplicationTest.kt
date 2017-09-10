@@ -64,7 +64,7 @@ class ApplicationTest {
     @Before
     fun setup() {
         this.client = WebTestClient.bindToServer()
-                .baseUrl("http://localhost:$port/${Application.PATH_PREFIX}")
+                .baseUrl("http://localhost:$port/$PATH_PREFIX")
                 .build()
     }
 
