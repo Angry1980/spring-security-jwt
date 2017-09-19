@@ -40,6 +40,11 @@ class HttpJwtSecurity(val signingKey: String,
     val authorizeExchangeBuilder = AuthorizeExchangeBuilder()
     val headers: HeaderBuilder = HeaderBuilder()
 
+    fun build(namespace: String, role: String) = this.apply {
+        securityMatcher = ServerWebExchangeMatchers.pathMatchers(namespace)
+        authorizeExchangeBuilder.anyExchange().hasRole(role)
+    }.build()
+
     /**
      *
      * @return instance of [SecurityWebFilterChain]

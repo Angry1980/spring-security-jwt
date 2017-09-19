@@ -69,11 +69,11 @@ class ApplicationTest {
     }
 
     @Test
-    fun `request protected resource with restricted access by user which has necessary permissions`() =
+    fun `request protected resource with restricted access by user which has got necessary permissions`() =
             testTemplate(test1Request.copy(user = User("TEST1"), status = HttpStatus.OK))
 
     @Test
-    fun `request protected resource with restricted access by user which has not necessary permissions`() =
+    fun `request protected resource with restricted access by user which has not got necessary permissions`() =
         testTemplate(test1Request.copy(user = User("TEST2"), status = HttpStatus.FORBIDDEN))
 
     @Test

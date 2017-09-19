@@ -25,6 +25,7 @@ class JwtAuthenticationConverter(val signingKey: String) : Function<ServerWebExc
                 ?. substring(7)
                 // parse jwt
                 ?. let { Jwts.parser().setSigningKey(signingKey).parseClaimsJws(it) }
+                ?. also { LOG.debug("Json web token: {}", it) }
                 // wrap parsed jwt by object which implements spring Authentication interface
                 ?. let { Mono.just(JwtAuthenticationToken(it)) }
                 ?: Mono.empty()
